@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
@@ -71,16 +72,17 @@ pub fn parse(input: String) -> #(RuleSet, List(Update)) {
   #(rules, updates)
 }
 
-// Could be refactored with TCO
+fn is_valid_page_location(page: Page, rest_of_update: Update, rules: RuleSet) {
+  let pages_after =
+    dict.get(rules, page)
+    |> result.unwrap(set.new())
+  list.all(rest_of_update, set.contains(pages_after, _))
+}
+
 fn is_valid_update(update: Update, rules: RuleSet) -> Bool {
   case update {
-    [page, ..rest] -> {
-      let pages_after =
-        dict.get(rules, page)
-        |> result.unwrap(set.new())
-      list.all(rest, set.contains(pages_after, _))
-      && is_valid_update(rest, rules)
-    }
+    [page, ..rest] ->
+      is_valid_page_location(page, rest, rules) && is_valid_update(rest, rules)
     _ -> True
   }
 }
@@ -100,6 +102,36 @@ pub fn pt_1(input: #(RuleSet, List(Update))) {
   |> int.sum()
 }
 
+fn correct_update(
+  corrected_update: Update,
+  incorrect_update: Update,
+  rules: RuleSet,
+) {
+  case incorrect_update {
+    [first_page, ..rest] -> {
+      case is_valid_page_location(first_page, rest, rules) {
+        True -> correct_update([first_page, ..corrected_update], rest, rules)
+        False ->
+          correct_update(
+            corrected_update,
+            list.append(rest, [first_page]),
+            rules,
+          )
+      }
+    }
+    _ -> corrected_update
+  }
+}
+
 pub fn pt_2(input: #(RuleSet, List(Update))) {
-  todo as "part 2 not implemented"
+  let #(rules, updates) = input
+  updates
+  |> list.filter(fn(update) {
+    update
+    |> is_valid_update(rules)
+    |> bool.negate()
+  })
+  |> list.map(correct_update([], _, rules))
+  |> list.map(middle_page)
+  |> int.sum
 }

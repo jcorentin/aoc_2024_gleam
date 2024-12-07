@@ -16,12 +16,8 @@ type InputRule {
   Rule(before: Page, after: Page)
 }
 
-pub type PageRuleSet {
-  RuleSet(pages_before: Set(Page), pages_after: Set(Page))
-}
-
-type RuleRegistery =
-  Dict(Page, PageRuleSet)
+type RuleSet =
+  Dict(Page, Set(Page))
 
 fn parse_rule(rule: String) -> InputRule {
   let assert Ok(#(before, after)) =
@@ -34,47 +30,15 @@ fn parse_rule(rule: String) -> InputRule {
   Rule(before:, after:)
 }
 
-fn add_rule(
-  existing_rules: RuleRegistery,
-  rule_to_add: InputRule,
-) -> RuleRegistery {
-  let new_rules =
-    dict.upsert(
-      in: existing_rules,
-      update: rule_to_add.before,
-      with: fn(ruleset) {
-        case ruleset {
-          Some(ruleset) ->
-            RuleSet(
-              ..ruleset,
-              pages_after: set.insert(ruleset.pages_after, rule_to_add.after),
-            )
-          None ->
-            RuleSet(
-              pages_before: set.new(),
-              pages_after: set.new() |> set.insert(rule_to_add.after),
-            )
-        }
-      },
-    )
-
-  dict.upsert(in: new_rules, update: rule_to_add.after, with: fn(ruleset) {
-    case ruleset {
-      Some(ruleset) ->
-        RuleSet(
-          ..ruleset,
-          pages_before: set.insert(ruleset.pages_before, rule_to_add.before),
-        )
-      None ->
-        RuleSet(
-          pages_before: set.new() |> set.insert(rule_to_add.before),
-          pages_after: set.new(),
-        )
-    }
-  })
+fn add_rule(rule_set: RuleSet, new_rule: InputRule) -> RuleSet {
+  use pageset <- dict.upsert(in: rule_set, update: new_rule.before)
+  case pageset {
+    Some(pageset) -> set.insert(pageset, new_rule.after)
+    None -> set.new() |> set.insert(new_rule.after)
+  }
 }
 
-fn parse_rules(rules: String) -> RuleRegistery {
+fn parse_rules(rules: String) -> RuleSet {
   rules
   |> string.split("\n")
   |> list.map(parse_rule)
@@ -95,10 +59,10 @@ fn parse_updates(updates) -> List(Update) {
   |> list.map(parse_update)
 }
 
-pub fn parse(input: String) -> #(RuleRegistery, List(Update)) {
+pub fn parse(input: String) -> #(RuleSet, List(Update)) {
   let assert Ok(#(rules, updates)) =
     input
-    |> string.trim
+    |> string.trim()
     |> string.split_once("\n\n")
 
   let rules = parse_rules(rules)
@@ -108,11 +72,14 @@ pub fn parse(input: String) -> #(RuleRegistery, List(Update)) {
 }
 
 // Could be refactored with TCO
-fn is_valid_update(update: Update, rules: RuleRegistery) -> Bool {
+fn is_valid_update(update: Update, rules: RuleSet) -> Bool {
   case update {
     [page, ..rest] -> {
-      let assert Ok(RuleSet(_, after)) = dict.get(rules, page)
-      list.all(rest, set.contains(after, _)) && is_valid_update(rest, rules)
+      let pages_after =
+        dict.get(rules, page)
+        |> result.unwrap(set.new())
+      list.all(rest, set.contains(pages_after, _))
+      && is_valid_update(rest, rules)
     }
     _ -> True
   }
@@ -125,7 +92,7 @@ fn middle_page(update: Update) -> Page {
   middle_page
 }
 
-pub fn pt_1(input: #(RuleRegistery, List(Update))) {
+pub fn pt_1(input: #(RuleSet, List(Update))) {
   let #(rules, updates) = input
   updates
   |> list.filter(is_valid_update(_, rules))
@@ -133,6 +100,6 @@ pub fn pt_1(input: #(RuleRegistery, List(Update))) {
   |> int.sum()
 }
 
-pub fn pt_2(input: #(RuleRegistery, List(Update))) {
+pub fn pt_2(input: #(RuleSet, List(Update))) {
   todo as "part 2 not implemented"
 }

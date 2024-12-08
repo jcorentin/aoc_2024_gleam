@@ -28,29 +28,47 @@ pub fn parse(input: String) -> List(Equation) {
   |> list.map(parse_equation)
 }
 
-fn equation_combinations(operands: List(Int)) -> List(Int) {
+fn equation_combinations(
+  operands: List(Int),
+  operators: List(fn(Int, Int) -> Int),
+) -> List(Int) {
   case operands {
     [a, b, ..rest] ->
-      list.append(
-        equation_combinations([a * b, ..rest]),
-        equation_combinations([a + b, ..rest]),
-      )
+      operators
+      |> list.map(fn(operator) {
+        equation_combinations([operator(a, b), ..rest], operators)
+      })
+      |> list.flatten()
     [a] -> [a]
     _ -> [0]
   }
 }
 
-fn is_valid_equation(equation: Equation) -> Bool {
-  list.contains(equation_combinations(equation.operands), equation.test_value)
+fn is_valid_equation(equation: Equation, operators) -> Bool {
+  list.contains(
+    equation_combinations(equation.operands, operators),
+    equation.test_value,
+  )
 }
 
-pub fn pt_1(input: List(Equation)) {
-  input
-  |> list.filter(is_valid_equation)
+fn sum_valid_test_values(equations: List(Equation), operators) {
+  equations
+  |> list.filter(is_valid_equation(_, operators))
   |> list.map(fn(eq) { eq.test_value })
   |> int.sum()
 }
 
+pub fn pt_1(input: List(Equation)) {
+  let operators = [int.multiply, int.add]
+  sum_valid_test_values(input, operators)
+}
+
+fn concatenate(a: Int, b: Int) -> Int {
+  let assert Ok(result) = int.parse(int.to_string(a) <> int.to_string(b))
+  result
+}
+
 pub fn pt_2(input: List(Equation)) {
-  todo as "part 2 not implemented"
+  let operators = [int.multiply, int.add, concatenate]
+  sum_valid_test_values(input, operators)
 }

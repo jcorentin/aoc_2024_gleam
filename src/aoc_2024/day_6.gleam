@@ -130,6 +130,7 @@ fn guard_trail(state: State) {
 
 pub fn pt_1(input: State) {
   guard_trail(input)
+  // Remove duplicate positions
   |> set.map(fn(guard) { guard.position })
   |> set.size()
 }
@@ -143,17 +144,17 @@ fn is_guard_in_loop(state: State) {
 }
 
 pub fn pt_2(input: State) {
-  dict.fold(input.map, 0, fn(count, position, object) {
-    case position, object {
-      position, Empty if position != input.guard.position -> {
-        let obstruction_added =
-          State(..input, map: dict.insert(input.map, position, Obstruction))
-        case is_guard_in_loop(obstruction_added) {
-          True -> count + 1
-          False -> count
-        }
-      }
-      _, _ -> count
-    }
-  })
+  use count, position, _object <- dict.fold(input.map, 0)
+
+  // Do not place an obstruction where the guard is initially
+  use <- bool.guard(position == input.guard.position, count)
+
+  // Add an obstruction otherwise
+  let map_with_obstruction = dict.insert(input.map, position, Obstruction)
+  let state = State(..input, map: map_with_obstruction)
+
+  case is_guard_in_loop(state) {
+    True -> count + 1
+    False -> count
+  }
 }

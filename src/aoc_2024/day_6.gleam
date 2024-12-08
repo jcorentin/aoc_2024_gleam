@@ -1,5 +1,6 @@
 import gleam/bool
 import gleam/dict.{type Dict}
+import gleam/function
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
@@ -144,17 +145,28 @@ fn is_guard_in_loop(state: State) {
 }
 
 pub fn pt_2(input: State) {
-  use count, position, _object <- dict.fold(input.map, 0)
+  let original_trail =
+    guard_trail(input)
+    |> set.map(fn(guard) { guard.position })
 
-  // Do not place an obstruction where the guard is initially
-  use <- bool.guard(position == input.guard.position, count)
+  let guard_loops = {
+    use position <- list.map(dict.keys(input.map))
 
-  // Add an obstruction otherwise
-  let map_with_obstruction = dict.insert(input.map, position, Obstruction)
-  let state = State(..input, map: map_with_obstruction)
+    // Do not place an obstruction where the guard is initially
+    use <- bool.guard(position == input.guard.position, False)
 
-  case is_guard_in_loop(state) {
-    True -> count + 1
-    False -> count
+    // Do not place an obstruction if not on original guard trail
+    use <- bool.guard(
+      bool.negate(set.contains(original_trail, position)),
+      False,
+    )
+
+    // Add an obstruction otherwise
+    let map_with_obstruction = dict.insert(input.map, position, Obstruction)
+    let state = State(..input, map: map_with_obstruction)
+
+    is_guard_in_loop(state)
   }
+
+  list.count(guard_loops, function.identity)
 }

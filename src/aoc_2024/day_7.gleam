@@ -1,7 +1,9 @@
+import gleam/function
 import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
+import gleam/yielder
 
 pub type Equation {
   Equation(test_value: Int, operands: List(Int))
@@ -28,27 +30,25 @@ pub fn parse(input: String) -> List(Equation) {
   |> list.map(parse_equation)
 }
 
-fn equation_combinations(
-  operands: List(Int),
+fn is_valid_equation(
+  equation: Equation,
   operators: List(fn(Int, Int) -> Int),
-) -> List(Int) {
-  case operands {
+) -> Bool {
+  case equation.operands {
+    [a, ..] if a > equation.test_value -> False
     [a, b, ..rest] ->
       operators
-      |> list.map(fn(operator) {
-        equation_combinations([operator(a, b), ..rest], operators)
+      |> yielder.from_list()
+      |> yielder.map(fn(operator) {
+        is_valid_equation(
+          Equation(..equation, operands: [operator(a, b), ..rest]),
+          operators,
+        )
       })
-      |> list.flatten()
-    [a] -> [a]
-    _ -> [0]
+      |> yielder.any(function.identity)
+    [a] -> a == equation.test_value
+    _ -> False
   }
-}
-
-fn is_valid_equation(equation: Equation, operators) -> Bool {
-  list.contains(
-    equation_combinations(equation.operands, operators),
-    equation.test_value,
-  )
 }
 
 fn sum_valid_test_values(equations: List(Equation), operators) {

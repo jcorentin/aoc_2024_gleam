@@ -1,9 +1,10 @@
 import gleam/dict.{type Dict}
 import gleam/list
+import gleam/result
 import gleam/string
 
-type GuardOutsideError {
-  GuardOutsideError
+type OutsideMapError {
+  OutsideMapError
 }
 
 pub type MapObject {
@@ -61,15 +62,26 @@ pub fn parse(input: String) -> State {
   }
 }
 
-fn move_guard_forward(guard: Guard) {
-  let row = guard.position.row
-  let col = guard.position.col
-  let new_position = case guard.direction {
+fn ahead_position(position: Position, direction: Direction) {
+  let row = position.row
+  let col = position.col
+  case direction {
     North -> Position(row: row - 1, col:)
     South -> Position(row: row + 1, col:)
     East -> Position(row:, col: col + 1)
     West -> Position(row:, col: col - 1)
   }
+}
+
+fn look_ahead(state: State) {
+  let look_ahead_position =
+    ahead_position(state.guard.position, state.guard.direction)
+  let look_ahead_object = dict.get(state.map, look_ahead_position)
+  result.replace_error(look_ahead_object, OutsideMapError)
+}
+
+fn move_guard_forward(guard: Guard) {
+  let new_position = ahead_position(guard.position, guard.direction)
   Guard(..guard, position: new_position)
 }
 
@@ -83,38 +95,21 @@ fn turn_guard_right(guard: Guard) {
   move_guard_forward(Guard(..guard, direction: new_direction))
 }
 
-fn try_move_guard(state: State) -> Result(State, GuardOutsideError) {
-  let guard_moved_forward = move_guard_forward(state.guard)
-  let guard_turned_right = turn_guard_right(state.guard)
-  let map_object_below_guard = dict.get(state.map, guard_moved_forward.position)
-  case map_object_below_guard {
-    Ok(object) ->
-      case object {
-        Obstruction ->
-          Ok(
-            State(
-              ..state,
-              guard: guard_turned_right,
-              trail: [guard_turned_right.position, ..state.trail],
-            ),
-          )
-        Empty ->
-          Ok(
-            State(
-              ..state,
-              guard: guard_moved_forward,
-              trail: [guard_moved_forward.position, ..state.trail],
-            ),
-          )
-      }
-    Error(_) -> Error(GuardOutsideError)
+fn try_move_guard(state: State) -> Result(State, OutsideMapError) {
+  use object <- result.try(look_ahead(state))
+  let new_guard = case object {
+    Obstruction -> turn_guard_right(state.guard)
+    Empty -> move_guard_forward(state.guard)
   }
+  Ok(
+    State(..state, guard: new_guard, trail: [new_guard.position, ..state.trail]),
+  )
 }
 
 fn guard_trail(state: State) {
   case try_move_guard(state) {
     Ok(new_state) -> guard_trail(new_state)
-    Error(GuardOutsideError) -> state.trail
+    Error(OutsideMapError) -> state.trail
   }
 }
 

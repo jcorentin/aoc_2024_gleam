@@ -1,10 +1,14 @@
+import gleam/bool
 import gleam/dict.{type Dict}
+import gleam/io
 import gleam/list
 import gleam/result
+import gleam/set.{type Set}
 import gleam/string
 
-type OutsideMapError {
+type MoveError {
   OutsideMapError
+  GuardInLoopError
 }
 
 pub type MapObject {
@@ -31,7 +35,7 @@ pub type Guard {
 }
 
 type Trail =
-  List(Position)
+  Set(Guard)
 
 pub type State {
   State(guard: Guard, map: Map, trail: Trail)
@@ -44,25 +48,28 @@ pub fn parse(input: String) -> State {
     |> string.split("\n")
 
   let default_guard = Guard(Position(0, 0), North)
-  let initial_state = State(default_guard, dict.new(), [])
+  let initial_state = State(default_guard, dict.new(), set.new())
 
   use state, row, row_idx <- list.index_fold(input, initial_state)
   use state, object, col_idx <- list.index_fold(string.to_graphemes(row), state)
+
   let position = Position(row_idx, col_idx)
+  let update_map = fn(object) { dict.insert(state.map, position, object) }
+
   case object {
-    "#" -> State(..state, map: dict.insert(state.map, position, Obstruction))
-    "." -> State(..state, map: dict.insert(state.map, position, Empty))
+    "#" -> State(..state, map: update_map(Obstruction))
+    "." -> State(..state, map: update_map(Empty))
     "^" ->
       State(
         guard: Guard(position:, direction: North),
-        map: dict.insert(state.map, position, Empty),
-        trail: [Position(row_idx, col_idx), ..state.trail],
+        map: update_map(Empty),
+        trail: set.insert(state.trail, Guard(position:, direction: North)),
       )
-    _ -> panic
+    _ -> panic as "Unknown input map character"
   }
 }
 
-fn ahead_position(position: Position, direction: Direction) {
+fn ahead_position(position: Position, direction: Direction) -> Position {
   let row = position.row
   let col = position.col
   case direction {
@@ -73,11 +80,12 @@ fn ahead_position(position: Position, direction: Direction) {
   }
 }
 
-fn look_ahead(state: State) {
+fn try_look_ahead(state: State) -> Result(MapObject, MoveError) {
   let look_ahead_position =
     ahead_position(state.guard.position, state.guard.direction)
-  let look_ahead_object = dict.get(state.map, look_ahead_position)
-  result.replace_error(look_ahead_object, OutsideMapError)
+
+  dict.get(state.map, look_ahead_position)
+  |> result.replace_error(OutsideMapError)
 }
 
 fn move_guard_forward(guard: Guard) {
@@ -95,14 +103,21 @@ fn turn_guard_right(guard: Guard) {
   move_guard_forward(Guard(..guard, direction: new_direction))
 }
 
-fn try_move_guard(state: State) -> Result(State, OutsideMapError) {
-  use object <- result.try(look_ahead(state))
+fn try_move_guard(state: State) -> Result(State, MoveError) {
+  use object <- result.try(try_look_ahead(state))
+
   let new_guard = case object {
     Obstruction -> turn_guard_right(state.guard)
     Empty -> move_guard_forward(state.guard)
   }
+
+  use <- bool.guard(
+    set.contains(state.trail, new_guard),
+    Error(GuardInLoopError),
+  )
+
   Ok(
-    State(..state, guard: new_guard, trail: [new_guard.position, ..state.trail]),
+    State(..state, guard: new_guard, trail: set.insert(state.trail, new_guard)),
   )
 }
 
@@ -110,15 +125,36 @@ fn guard_trail(state: State) {
   case try_move_guard(state) {
     Ok(new_state) -> guard_trail(new_state)
     Error(OutsideMapError) -> state.trail
+    Error(GuardInLoopError) -> panic as "Guard is stuck in a loop !"
   }
 }
 
 pub fn pt_1(input: State) {
   guard_trail(input)
-  |> list.unique
-  |> list.length
+  |> set.map(fn(guard) { guard.position })
+  |> set.size()
+}
+
+fn is_guard_in_loop(state: State) {
+  case try_move_guard(state) {
+    Ok(new_state) -> is_guard_in_loop(new_state)
+    Error(OutsideMapError) -> False
+    Error(GuardInLoopError) -> True
+  }
 }
 
 pub fn pt_2(input: State) {
-  todo as "part 2 not implemented"
+  dict.fold(input.map, 0, fn(count, position, object) {
+    case position, object {
+      position, Empty if position != input.guard.position -> {
+        let obstruction_added =
+          State(..input, map: dict.insert(input.map, position, Obstruction))
+        case is_guard_in_loop(obstruction_added) {
+          True -> count + 1
+          False -> count
+        }
+      }
+      _, _ -> count
+    }
+  })
 }

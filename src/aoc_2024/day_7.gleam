@@ -64,7 +64,11 @@ pub fn pt_1(input: List(Equation)) {
 }
 
 fn concatenate(a: Int, b: Int) -> Int {
-  let assert Ok(result) = int.parse(int.to_string(a) <> int.to_string(b))
+  let assert Ok(a) = int.digits(a, 10)
+  let assert Ok(b) = int.digits(b, 10)
+  let assert Ok(result) =
+    list.append(a, b)
+    |> int.undigits(10)
   result
 }
 

@@ -1,3 +1,4 @@
+import gleam/function
 import gleam/int
 import gleam/list
 import gleam/result
@@ -71,6 +72,79 @@ pub fn pt_1(input: List(String)) {
   |> list.index_fold(0, checksum)
 }
 
+fn do_delete_file(
+  file: List(String),
+  blocks_to_search: List(List(String)),
+  blocks_searched: List(List(String)),
+) {
+  case blocks_to_search {
+    [blocks, ..rest] if blocks == file ->
+      list.flatten([
+        list.reverse(blocks_searched),
+        [list.map(file, fn(_) { "." })],
+        rest,
+      ])
+    [blocks, ..rest] -> do_delete_file(file, rest, [blocks, ..blocks_searched])
+    [] -> panic as "File is not even in disk"
+  }
+}
+
+fn delete_file(file: List(String), blocks: List(List(String))) {
+  do_delete_file(file, blocks, [])
+}
+
+fn try_move_file(
+  file: List(String),
+  blocks_to_search: List(List(String)),
+  blocks_searched: List(List(String)),
+) -> Result(List(List(String)), String) {
+  let file_length = list.length(file)
+  case blocks_to_search {
+    [] -> panic as "File is not even in disk"
+    [blocks, ..] if blocks == file -> Error("File cannot be moved left")
+    [[".", ..] as free_blocks, ..rest] ->
+      case list.length(free_blocks) {
+        n if n > file_length ->
+          Ok(
+            list.flatten([
+              list.reverse(blocks_searched),
+              [file, list.repeat(".", n - file_length)],
+              delete_file(file, rest),
+            ]),
+          )
+        n if n == file_length ->
+          Ok(
+            list.flatten([
+              list.reverse(blocks_searched),
+              [file],
+              delete_file(file, rest),
+            ]),
+          )
+        _ -> try_move_file(file, rest, [free_blocks, ..blocks_searched])
+      }
+    [other_file, ..rest] ->
+      try_move_file(file, rest, [other_file, ..blocks_searched])
+  }
+}
+
+fn compact(blocks: List(List(String))) {
+  blocks
+  |> list.reverse()
+  |> list.fold(blocks, fn(compacted, block) {
+    case block {
+      [] -> compacted
+      [".", ..] -> compacted
+      [_, ..] as file ->
+        try_move_file(file, compacted, [])
+        |> result.unwrap(compacted)
+    }
+  })
+}
+
 pub fn pt_2(input: List(String)) {
-  todo as "part 2 not implemented"
+  input
+  |> list.chunk(function.identity)
+  |> compact()
+  |> list.flatten()
+  |> list.index_fold(0, checksum)
 }

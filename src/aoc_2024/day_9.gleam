@@ -1,7 +1,4 @@
-import gleam/bool
-import gleam/deque
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
@@ -33,35 +30,34 @@ pub fn parse(input: String) -> List(String) {
   |> list.flatten()
 }
 
+fn reclaim_free_space(acc, defraged, free_space) {
+  case defraged, free_space {
+    [], _ -> acc
+
+    [_, ..rest_blocks], [empty, ..rest_empty] ->
+      reclaim_free_space([empty, ..acc], rest_blocks, rest_empty)
+
+    [block, ..rest], [] -> reclaim_free_space([block, ..acc], rest, [])
+  }
+}
+
 fn defrag(
   defraged: List(String),
-  free_space_end: List(String),
-  rem_file_blocks: deque.Deque(String),
+  free_blocks: List(String),
+  rem_blocks: List(String),
+  rev_blocks: List(String),
 ) -> List(String) {
-  use <- bool.guard(
-    when: deque.is_empty(rem_file_blocks),
-    return: list.append(list.reverse(defraged), free_space_end),
-  )
+  case rem_blocks, rev_blocks {
+    [".", ..], [".", ..rest_rev] ->
+      defrag(defraged, free_blocks, rem_blocks, rest_rev)
 
-  let front = deque.pop_front(rem_file_blocks)
-  let back = deque.pop_back(rem_file_blocks)
-  let assert Ok(#(front, without_front)) = front
-  let assert Ok(#(back, without_back)) = back
-  let without_front_and_back = case deque.pop_back(without_front) {
-    Ok(#(_back, without_front_and_back)) -> without_front_and_back
-    Error(Nil) -> deque.new()
-  }
+    [".", ..rest_rem], [block, ..rest_rev] ->
+      defrag([block, ..defraged], [".", ..free_blocks], rest_rem, rest_rev)
 
-  case front, back {
-    ".", "." -> defrag(defraged, [".", ..free_space_end], without_back)
-    ".", file_block ->
-      defrag(
-        [file_block, ..defraged],
-        [".", ..free_space_end],
-        without_front_and_back,
-      )
-    file_block, _ ->
-      defrag([file_block, ..defraged], free_space_end, without_front)
+    [block, ..rest], _ ->
+      defrag([block, ..defraged], free_blocks, rest, rev_blocks)
+
+    [], _ -> reclaim_free_space([], defraged, free_blocks)
   }
 }
 
@@ -71,9 +67,7 @@ fn checksum(checksum, block, position) {
 }
 
 pub fn pt_1(input: List(String)) {
-  input
-  |> deque.from_list()
-  |> defrag([], [], _)
+  defrag([], [], input, list.reverse(input))
   |> list.index_fold(0, checksum)
 }
 

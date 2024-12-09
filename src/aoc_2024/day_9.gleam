@@ -120,12 +120,11 @@ fn do_delete_file(
 ) -> List(List(String)) {
   case disk_part_to_search {
     [blocks, ..rest_of_disk] if blocks == file ->
-      list.flatten([
+      list.append(
         list.reverse(disk_part_searched),
         // Actual deletion, replacing file by free blocks
-        [list.map(file, fn(_) { "." })],
-        rest_of_disk,
-      ])
+        [list.map(file, fn(_) { "." }), ..rest_of_disk],
+      )
     [blocks, ..rest_of_disk] ->
       do_delete_file(file, rest_of_disk, [blocks, ..disk_part_searched])
     [] -> panic as "File is not on disk"
@@ -150,19 +149,18 @@ fn do_try_move_file(
         n if n > file_length ->
           // Found a big free slot file, inserting file and deleting original
           Ok(
-            list.flatten([
-              list.reverse(disk_part_searched),
-              [file, list.repeat(".", n - file_length)],
-              delete_file(file, rest_of_disk),
+            list.append(list.reverse(disk_part_searched), [
+              file,
+              list.repeat(".", n - file_length),
+              ..delete_file(file, rest_of_disk)
             ]),
           )
         n if n == file_length ->
           // Found a slot with exactly the good size, inserting file and deleting original
           Ok(
-            list.flatten([
-              list.reverse(disk_part_searched),
-              [file],
-              delete_file(file, rest_of_disk),
+            list.append(list.reverse(disk_part_searched), [
+              file,
+              ..delete_file(file, rest_of_disk)
             ]),
           )
         _ ->

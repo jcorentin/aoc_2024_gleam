@@ -20,6 +20,7 @@ gladvent = ">= 2.0.2 and < 3.0.0"
 gleam_yielder = ">= 1.1.0 and < 2.0.0"
 gleam_regexp = ">= 1.0.0 and < 2.0.0"
 gleam_otp = ">= 0.14.1 and < 1.0.0"
+gleam_deque = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
@@ -34,3 +35,4 @@ hexdocs_offline = ">= 1.0.5 and < 2.0.0"
 6 = { pt_1 = 4988, pt_2 = 1697 }
 7 = { pt_1 = 20665830408335, pt_2 = 354060705047464 }
 8 = { pt_1 = 254, pt_2 = 951 }
+9 = { pt_1 = 6288707484810 }

@@ -91,25 +91,29 @@ fn do_accessible_summits(
     |> result.unwrap([])
   })
   |> list.flatten()
-  // Keep only once each summit, even if it was accessible by different trails
-  |> list.unique()
 }
 
 fn accessible_summits(from point: Point, on map: Map) -> List(Point) {
   do_accessible_summits([], point, map)
 }
 
-pub fn pt_1(input: Map) -> Int {
-  let world_map = input
-  dict.filter(input, fn(_, height) { height == ground })
+fn all_trails_from_trailheads(map: Map) {
+  dict.filter(map, fn(_, height) { height == ground })
   |> dict.fold([], fn(summits_reached, trailhead_position, _trailhead_height) {
     let trailhead = Point(trailhead_position, ground)
-    [accessible_summits(from: trailhead, on: world_map), ..summits_reached]
+    [accessible_summits(from: trailhead, on: map), ..summits_reached]
   })
+}
+
+pub fn pt_1(input: Map) -> Int {
+  all_trails_from_trailheads(input)
+  |> list.map(list.unique)
   |> list.map(list.length)
   |> int.sum()
 }
 
 pub fn pt_2(input: Map) {
-  todo as "part 2 not implemented"
+  all_trails_from_trailheads(input)
+  |> list.map(list.length)
+  |> int.sum()
 }

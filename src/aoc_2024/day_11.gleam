@@ -73,16 +73,11 @@ fn count_stones(
   let #(count, cache) = case transform_stone(stone), remaining_blinks {
     [_], 1 -> #(1, cache)
     [_, _], 1 -> #(2, cache)
-    [next_stone], blinks -> {
-      count_stones(next_stone, blinks - 1, cache)
-    }
-    [next_stone_left, next_stone_right], blinks -> {
-      let #(count_left, cache) =
-        count_stones(next_stone_left, blinks - 1, cache)
-      let #(count_right, cache) =
-        count_stones(next_stone_right, blinks - 1, cache)
-      let count = count_left + count_right
-      #(count, cache)
+    [next], blinks -> count_stones(next, blinks - 1, cache)
+    [next_left, next_right], blinks -> {
+      let #(count_left, cache) = count_stones(next_left, blinks - 1, cache)
+      let #(count_right, cache) = count_stones(next_right, blinks - 1, cache)
+      #(count_left + count_right, cache)
     }
     _, _ -> panic as "Unexpected stone transform"
   }

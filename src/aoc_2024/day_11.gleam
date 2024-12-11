@@ -69,15 +69,12 @@ fn count_stones(
     |> result.map(fn(result) { #(result, cache) })
 
   use <- result.lazy_unwrap(cached_result)
-  let memoize = fn(cache, value) {
-    dict.insert(cache, #(stone, remaining_blinks), value)
-  }
-  case transform_stone(stone), remaining_blinks {
-    [_], 1 -> #(1, memoize(cache, 1))
-    [_, _], 1 -> #(2, memoize(cache, 2))
+
+  let #(count, cache) = case transform_stone(stone), remaining_blinks {
+    [_], 1 -> #(1, cache)
+    [_, _], 1 -> #(2, cache)
     [next_stone], blinks -> {
-      let #(count, cache) = count_stones(next_stone, blinks - 1, cache)
-      #(count, memoize(cache, count))
+      count_stones(next_stone, blinks - 1, cache)
     }
     [next_stone_left, next_stone_right], blinks -> {
       let #(count_left, cache) =
@@ -85,10 +82,12 @@ fn count_stones(
       let #(count_right, cache) =
         count_stones(next_stone_right, blinks - 1, cache)
       let count = count_left + count_right
-      #(count, memoize(cache, count))
+      #(count, cache)
     }
     _, _ -> panic as "Unexpected stone transform"
   }
+
+  #(count, dict.insert(cache, #(stone, remaining_blinks), count))
 }
 
 pub fn pt_2(input: List(Int)) {

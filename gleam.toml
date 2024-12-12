@@ -21,6 +21,7 @@ gleam_yielder = ">= 1.1.0 and < 2.0.0"
 gleam_regexp = ">= 1.0.0 and < 2.0.0"
 gleam_otp = ">= 0.14.1 and < 1.0.0"
 gleam_deque = ">= 1.0.0 and < 2.0.0"
+youid = ">= 1.2.0 and < 2.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
@@ -38,3 +39,4 @@ hexdocs_offline = ">= 1.0.5 and < 2.0.0"
 9 = { pt_1 = 6288707484810, pt_2 = 6311837662089 }
 10 = { pt_1 = 557, pt_2 = 1062 }
 11 = { pt_1 = 200446, pt_2 = 238317474993392 }
+12 = { pt_1 = 1387004 }

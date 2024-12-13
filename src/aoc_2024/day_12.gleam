@@ -148,8 +148,114 @@ pub fn pt_1(input: PlantGrid) -> Int {
   |> int.sum()
 }
 
+type FenceKind {
+  Top
+  Bottom
+  Left
+  Right
+}
+
+type Fence {
+  Fence(kind: FenceKind, from: Position, to: Position)
+}
+
+fn plot_fences(pos: Position, region: Region) {
+  let Position(row, col) = pos
+  [
+    #(Bottom, Position(row + 1, col)),
+    #(Top, Position(row - 1, col)),
+    #(Right, Position(row, col + 1)),
+    #(Left, Position(row, col - 1)),
+  ]
+  |> list.fold([], fn(fences, nearby) {
+    let #(side, nearby_position) = nearby
+    let is_nearby_inside_region = list.contains(region, nearby_position)
+    case is_nearby_inside_region {
+      True -> fences
+      False -> [Fence(kind: side, from: pos, to: pos), ..fences]
+    }
+  })
+}
+
+fn expend_fence(
+  group_fence: Fence,
+  fences_available: List(Fence),
+  fences_not_used: List(Fence),
+) -> #(Fence, List(Fence)) {
+  let #(extend_from, extend_to) = besides(group_fence)
+  case fences_available {
+    [single_fence, ..rest_available]
+      if single_fence.kind == group_fence.kind
+      && single_fence.from == extend_from
+    ->
+      expend_fence(
+        Fence(..group_fence, from: extend_from),
+        list.append(fences_not_used, rest_available),
+        [],
+      )
+    [single_fence, ..rest_available]
+      if single_fence.kind == group_fence.kind && single_fence.to == extend_to
+    ->
+      expend_fence(
+        Fence(..group_fence, to: extend_to),
+        list.append(fences_not_used, rest_available),
+        [],
+      )
+    [single_fence, ..rest_available] ->
+      expend_fence(group_fence, rest_available, [
+        single_fence,
+        ..fences_not_used
+      ])
+    [] -> #(group_fence, fences_not_used)
+  }
+}
+
+fn group_single_fences(
+  all_single_fences: List(Fence),
+  all_grouped_fences: List(Fence),
+) -> List(Fence) {
+  case all_single_fences {
+    [first, ..rest] -> {
+      let #(grouped, remaining_single) = expend_fence(first, rest, [])
+      group_single_fences(remaining_single, [grouped, ..all_grouped_fences])
+    }
+    _ -> all_grouped_fences
+  }
+}
+
+fn left(position: Position) {
+  Position(row: position.row, col: position.col - 1)
+}
+
+fn right(position: Position) {
+  Position(row: position.row, col: position.col + 1)
+}
+
+fn up(position: Position) {
+  Position(row: position.row - 1, col: position.col)
+}
+
+fn down(position: Position) {
+  Position(row: position.row + 1, col: position.col)
+}
+
+fn besides(fence: Fence) {
+  case fence.kind {
+    Bottom | Top -> #(left(fence.from), right(fence.to))
+    Left | Right -> #(up(fence.from), down(fence.to))
+  }
+}
+
+fn region_sides(region: Region) -> Int {
+  region
+  |> list.flat_map(plot_fences(_, region))
+  |> group_single_fences([])
+  |> list.length()
+}
+
 fn pt_2_region_price(region: Region) -> Int {
-  todo
+  let area = list.length(region)
+  area * region_sides(region)
 }
 
 pub fn pt_2(input: PlantGrid) {

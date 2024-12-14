@@ -29,6 +29,7 @@ packages = [
   { name = "hexdocs_offline", version = "1.0.5", build_tools = ["gleam"], requirements = ["gleam_stdlib", "glexec", "nakai", "simplifile", "tom"], otp_app = "hexdocs_offline", source = "hex", outer_checksum = "6CF1B599A5EBEC91A43307F744778FA769621AB3AEBBDB46B0A53F4F49F641D0" },
   { name = "nakai", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "nakai", source = "hex", outer_checksum = "58D863966CFCAFCE60CE67C609B2C803551F76FEED8F3BAF6CD03F3C4B16C954" },
   { name = "parallel_map", version = "2.1.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_otp", "gleam_stdlib"], otp_app = "parallel_map", source = "hex", outer_checksum = "DE2BA9878728EF9EE34BE83FEDC7A18A1ABE4B2AC1E79C710E3E5D95F5E73404" },
+  { name = "party", version = "1.0.6", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "party", source = "hex", outer_checksum = "E3B712048B10F843484567BA5B9C94828D8A0B8B7782C9219E0106C694AFA1A1" },
   { name = "repeatedly", version = "2.1.2", build_tools = ["gleam"], requirements = [], otp_app = "repeatedly", source = "hex", outer_checksum = "93AE1938DDE0DC0F7034F32C1BF0D4E89ACEBA82198A1FE21F604E849DA5F589" },
   { name = "shellout", version = "1.6.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "shellout", source = "hex", outer_checksum = "E2FCD18957F0E9F67E1F497FC9FF57393392F8A9BAEAEA4779541DE7A68DD7E0" },
   { name = "simplifile", version = "2.2.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0DFABEF7DC7A9E2FF4BB27B108034E60C81BEBFCB7AB816B9E7E18ED4503ACD8" },
@@ -48,5 +49,6 @@ gleam_stdlib = { version = ">= 0.34.0 and < 2.0.0" }
 gleam_yielder = { version = ">= 1.1.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 hexdocs_offline = { version = ">= 1.0.5 and < 2.0.0" }
+party = { version = ">= 1.0.6 and < 2.0.0" }
 simplifile = { version = ">= 2.2.0 and < 3.0.0" }
 youid = { version = ">= 1.2.0 and < 2.0.0" }

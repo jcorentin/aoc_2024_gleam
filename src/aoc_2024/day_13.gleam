@@ -1,6 +1,5 @@
 import gleam/float
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/string
 import party.{type Parser, digits, do, drop, return, string}
@@ -61,7 +60,6 @@ fn solve(equation: Equation) -> EquationSolution {
   }
   let a = { x_prize -. { b *. x_b } } /. x_a
   EquationSolution(a:, b:)
-  |> io.debug
 }
 
 fn is_properly_solved(equation: Equation, solution: EquationSolution) {
